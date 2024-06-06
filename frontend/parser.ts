@@ -5,6 +5,8 @@ import {
   Expr,
   Identifier,
   NumericLiteral,
+  Property,
+  ObjectLiteral,
   Program,
   Stmt,
   VarDeclaration,
@@ -87,7 +89,7 @@ export default class Parser {
     const isConstant = this.eat().type == TokenType.Const;
     const identifier = this.expect(
       TokenType.Identifier,
-      "Expected identifier name following let | const keywords.",
+      "Expected identifier name following let | const keywords."
     ).value;
 
     if (this.at().type == TokenType.Semicolon) {
@@ -105,7 +107,7 @@ export default class Parser {
 
     this.expect(
       TokenType.Equals,
-      "Expected equals token following identifier in var declaration.",
+      "Expected equals token following identifier in var declaration."
     );
 
     const declaration = {
@@ -117,7 +119,7 @@ export default class Parser {
 
     this.expect(
       TokenType.Semicolon,
-      "Variable declaration statment must end with semicolon.",
+      "Variable declaration statment must end with semicolon."
     );
 
     return declaration;
@@ -129,7 +131,7 @@ export default class Parser {
   }
 
   parse_assignment_expr(): Expr {
-    const left = this.parse_additive_expr(); // switch this out with objectExpr
+    const left = this.parse_object_expr(); // switch this out with objectExpr
 
     if (this.at().type == TokenType.Equals) {
       this.eat(); // advance past equals
@@ -138,6 +140,65 @@ export default class Parser {
     }
 
     return left;
+  }
+
+  private parse_object_expr(): Expr {
+    // { Prop[]}
+
+    if (this.at().type !== TokenType.OpenBrace) {
+      return this.parse_additive_expr();
+    }
+
+    this.eat(); // advance past opening brace
+    const properties = new Array<Property>();
+
+    while (this.not_eof() && this.at().type !== TokenType.CloseBrace) {
+      // { key: val, key2: val}
+      const key = this.expect(
+        TokenType.Identifier,
+        "Object Literal missing key."
+      ).value;
+
+      //Allows shorthand key: pair -> {key,}
+      if (this.at().type == TokenType.Comma) {
+        this.eat(); // advance past Comma
+        properties.push({
+          key,
+          kind: "Property",
+          value: undefined,
+        } as Property);
+        continue;
+      }
+      //Allows shorthand key: pair -> {key}
+      else if (this.at().type == TokenType.CloseBrace) {
+        properties.push({
+          key,
+          kind: "Property",
+          value: undefined,
+        });
+        continue;
+      }
+
+      // { key: val }
+      this.expect(TokenType.Colon, "Object Literal missing colon.");
+      const value = this.parse_expr();
+
+      properties.push({
+        key,
+        value,
+        kind: "Property",
+      });
+
+      if (this.at().type != TokenType.CloseBrace) {
+        this.expect(
+          TokenType.Comma,
+          "Object Literal missing comma or closing bracket following property."
+        );
+      }
+    }
+
+    this.expect(TokenType.CloseBrace, "Object Literal missing close brace.");
+    return { kind: "ObjectLiteral", properties } as ObjectLiteral;
   }
 
   // Handle Addition & Subtraction Operations
@@ -163,7 +224,9 @@ export default class Parser {
     let left = this.parse_primary_expr();
 
     while (
-      this.at().value == "/" || this.at().value == "*" || this.at().value == "%"
+      this.at().value == "/" ||
+      this.at().value == "*" ||
+      this.at().value == "%"
     ) {
       const operator = this.eat().value;
       const right = this.parse_primary_expr();
@@ -206,7 +269,7 @@ export default class Parser {
         const value = this.parse_expr();
         this.expect(
           TokenType.CloseParen,
-          "Unexpected token found inside parenthesised expression. Expected closing parenthesis.",
+          "Unexpected token found inside parenthesised expression. Expected closing parenthesis."
         ); // closing paren
         return value;
       }
