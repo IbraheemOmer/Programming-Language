@@ -24,6 +24,7 @@ To run this language, you need to have the following installed:
 1. **Clone the repository**: Clone this project to your local machine.
 2. **Install Deno**: Follow the instructions on the [Deno website](https://deno.com/) to install Deno on your computer.
 3. **Install Deno Extension for VS Code**: Add the Deno extension to your Visual Studio Code from [this link](https://marketplace.visualstudio.com/items?itemName=denoland.vscode-deno).
+4. **Code:** Write your code in the `test.txt` file.
 
 ## Running the Project
 
